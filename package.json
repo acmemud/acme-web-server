@@ -4,7 +4,7 @@
   "description": "Acme MUD Web Server",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js --exec babel-node",
+    "start": "nodemon -L index.js --exec babel-node",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,7 +19,9 @@
   "homepage": "https://github.com/acmemud/acme-web-server#readme",
   "dependencies": {
     "express": "^4.14.1",
-    "express-ws": "^2.0.0"
+    "express-ws": "^2.0.0",
+    "stream-json": "^0.4.2",
+    "telnet-stream": "0.0.4"
   },
   "devDependencies": {
     "babel-cli": "^6.22.2",
