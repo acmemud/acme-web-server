@@ -5,7 +5,7 @@ import {TelnetInput, TelnetOutput} from 'telnet-stream';
 import * as StreamArray from 'stream-json/utils/StreamArray';
 import TelnetConstants from './server-constants';
 
-const TermType = "acme";
+const TermType = "acme-web";
 
 var app = express();
 expressWs(app);
