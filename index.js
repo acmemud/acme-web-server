@@ -3,6 +3,9 @@ import express from 'express';
 import expressWs from 'express-ws';
 import {TelnetInput, TelnetOutput} from 'telnet-stream';
 import * as StreamArray from 'stream-json/utils/StreamArray';
+import TelnetConstants from './server-constants';
+
+const TermType = "acme";
 
 var app = express();
 expressWs(app);
@@ -20,8 +23,7 @@ app.get('/', (req, res, next) => {
  
 app.ws('/', (ws, req) => {
   let socket = net.createConnection(2010, 'localhost', () => {
-    telnetToJsonWs(socket, ws);
-
+    let telnetInput = telnetToJsonWs(socket, ws);
     let telnetOutput = new TelnetOutput();
     telnetOutput.pipe(socket);
 
@@ -34,6 +36,37 @@ app.ws('/', (ws, req) => {
       console.log("websocket stream closed");
       socket.destroy();
     });
+
+    telnetInput.on('do', option => {
+      console.log('do', option, TelnetConstants.TELOPT_TTYPE);
+      switch (option) {
+        case TelnetConstants.TELOPT_TTYPE:
+          console.log('write will termtype');
+          telnetOutput.writeWill(TelnetConstants.TELOPT_TTYPE);
+          break;
+      }
+    });
+
+    telnetInput.on('sub', (option, buffer) => {
+      console.log('sub', option, buffer);
+      switch (option) {
+        case TelnetConstants.TELOPT_TTYPE:
+          if (buffer[0] == TelnetConstants.TELQUAL_SEND) {
+            let ttype = TermType.split('').map(c => { return c.charCodeAt(0) });
+            let buffer = Buffer.from([
+              TelnetConstants.TELQUAL_IS,
+              ...ttype,
+            ]);
+            console.log('write sub termtype', buffer);
+            telnetOutput.writeSub(TelnetConstants.TELOPT_TTYPE, buffer);
+          } else {
+            console.log("invalid termtype subnegotation received", buffer);
+          }
+      }
+
+    });
+
+
   });
 
   socket.on('close', had_error => {
@@ -45,8 +78,8 @@ app.ws('/', (ws, req) => {
 });
 
 function telnetToJsonWs(socket, ws) {
-  let telnetInput = new TelnetInput();
-  let jsonStream = StreamArray.make();
+  var telnetInput = new TelnetInput();
+  var jsonStream = StreamArray.make();
 
   socket.pipe(telnetInput).pipe(jsonStream.input);
 
@@ -60,7 +93,7 @@ function telnetToJsonWs(socket, ws) {
     telnetToJsonWs(socket, ws);
   });
 
-  return jsonStream;
+  return telnetInput;
 }
  
 app.listen(8080);
